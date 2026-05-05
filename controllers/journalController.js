@@ -84,10 +84,11 @@ exports.getTopicsByCategory = async (req, res) => {
     }
 };
 
-// Full Tree Getter (Useful for frontend navigation)
+// Full Tree Getter — single aggregation pipeline (no N+1 loops)
 exports.getFullJournalTree = async (req, res) => {
     try {
-        const tree = await Year.aggregate([
+        const result = await Year.aggregate([
+            { $sort: { year: -1 } },
             {
                 $lookup: {
                     from: 'issues',
@@ -97,6 +98,7 @@ exports.getFullJournalTree = async (req, res) => {
                 }
             },
             { $unwind: { path: '$issues', preserveNullAndEmptyArrays: true } },
+            { $sort: { year: -1, 'issues.order': 1 } },
             {
                 $lookup: {
                     from: 'categories',
@@ -105,34 +107,100 @@ exports.getFullJournalTree = async (req, res) => {
                     as: 'issues.categories'
                 }
             },
-            // This is getting complex for aggregate, better do it in JS or multiple queries for simplicity if needed
-        ]);
-        // For now, let's just return years and issues as a start
-        const years = await Year.find().sort({ year: -1 });
-        const result = [];
-        for (const y of years) {
-            const issues = await Issue.find({ year: y._id }).sort({ order: 1 });
-            const issuesWithData = [];
-            for (const i of issues) {
-                const categories = await Category.find({ issue: i._id }).sort({ createdAt: 1 });
-                const categoriesWithData = [];
-                for (const c of categories) {
-                    let articles = await Article.find({ category: c._id });
-                    
-                    // Sort articles numerically by their starting page number
-                    articles = articles.sort((a, b) => {
-                        const pageA = parseInt((a.pages || '').split('-')[0]) || 0;
-                        const pageB = parseInt((b.pages || '').split('-')[0]) || 0;
-                        return pageA - pageB;
-                    });
-
-                    categoriesWithData.push({ ...c._doc, articles });
+            { $unwind: { path: '$issues.categories', preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: 'articles',
+                    localField: 'issues.categories._id',
+                    foreignField: 'category',
+                    as: 'issues.categories.articles'
                 }
-                issuesWithData.push({ ...i._doc, categories: categoriesWithData });
+            },
+            {
+                $group: {
+                    _id: { yearId: '$_id', issueId: '$issues._id' },
+                    year: { $first: '$year' },
+                    issue: { $first: '$issues' },
+                    categories: { $push: '$issues.categories' }
+                }
+            },
+            {
+                $addFields: {
+                    'issue.categories': {
+                        $filter: {
+                            input: '$categories',
+                            as: 'c',
+                            cond: { $ifNull: ['$$c._id', false] }
+                        }
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: '$_id.yearId',
+                    year: { $first: '$year' },
+                    issues: { $push: '$issue' }
+                }
+            },
+            { $sort: { year: -1 } },
+            {
+                $project: {
+                    _id: 1,
+                    year: 1,
+                    issues: 1
+                }
             }
-            result.push({ ...y._doc, issues: issuesWithData });
-        }
+        ]);
         res.json(result);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Single Issue Data — fetches only one issue by year number + issue order
+exports.getIssueData = async (req, res) => {
+    try {
+        const yearNum = parseInt(req.params.year);   // e.g. 2021
+        const orderNum = parseInt(req.params.order); // 1 or 2
+
+        const yearDoc = await Year.findOne({ year: yearNum });
+        if (!yearDoc) return res.status(404).json({ message: 'Year not found' });
+
+        const issueDoc = await Issue.findOne({ year: yearDoc._id, order: orderNum });
+        if (!issueDoc) return res.status(404).json({ message: 'Issue not found' });
+
+        // Fetch all categories for this issue in one query
+        const categories = await Category.find({ issue: issueDoc._id }).sort({ createdAt: 1 }).lean();
+        const categoryIds = categories.map(c => c._id);
+
+        // Fetch ALL articles for every category in one single query
+        const allArticles = await Article.find({ category: { $in: categoryIds } })
+            .select('title authors pages category doi')
+            .lean();
+
+        // Group articles by category id
+        const articlesByCategory = {};
+        for (const art of allArticles) {
+            const catKey = art.category.toString();
+            if (!articlesByCategory[catKey]) articlesByCategory[catKey] = [];
+            articlesByCategory[catKey].push(art);
+        }
+
+        // Sort articles within each category by starting page number
+        const categoriesWithArticles = categories.map(c => {
+            const arts = (articlesByCategory[c._id.toString()] || []).sort((a, b) => {
+                const pageA = parseInt((a.pages || '').split('-')[0]) || 0;
+                const pageB = parseInt((b.pages || '').split('-')[0]) || 0;
+                return pageA - pageB;
+            });
+            return { ...c, articles: arts };
+        });
+
+        res.json({
+            ...issueDoc.toObject(),
+            year: yearNum,
+            categories: categoriesWithArticles
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

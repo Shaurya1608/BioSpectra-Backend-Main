@@ -20,4 +20,7 @@ router.get('/categories/:categoryId/topics', journalController.getTopicsByCatego
 // Full Tree
 router.get('/tree', journalController.getFullJournalTree);
 
+// Single Issue Data (fast — only fetches the requested issue)
+router.get('/issue/:year/:order', journalController.getIssueData);
+
 module.exports = router;
