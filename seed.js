@@ -100,7 +100,7 @@ const aboutData = [
         title: "Founders of MSET",
         content: "Prof. (Dr.) Mahendra Prasad & Mrs. Pali Vasudha",
         sectionType: "founder",
-        images: ["/assets/madhavi.jpg"],
+        images: ["/assets/logo/madhavi.jpg"],
         order: 2
     },
     {
@@ -113,7 +113,7 @@ const aboutData = [
         title: "Official Publication",
         content: "BIOSPECTRA: ISSN-0973-7057. An International Biannual Refereed Journal of Life Sciences",
         sectionType: "publication",
-        images: ["/logo/Biospectra-logo.jpg.jpeg"],
+        images: ["/assets/logo/biospectra-logo.jpg"],
         order: 4
     }
 ];
