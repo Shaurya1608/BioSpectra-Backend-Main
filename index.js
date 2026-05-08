@@ -78,6 +78,7 @@ app.use('/api/journal', require('./routes/journalRoutes'));
 app.use('/api/about', require('./routes/aboutRoutes'));
 app.use('/api/editorial', require('./routes/editorialRoutes'));
 app.use('/api/gallery', require('./routes/galleryRoutes'));
+app.use('/api/search', require('./routes/searchRoutes'));
 
 // Special Public Route for articles (index view)
 // Note: We protect only the modification routes in the routes themselves, 
