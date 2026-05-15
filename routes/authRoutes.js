@@ -5,6 +5,7 @@ const passport = require('../config/passport');
 
 router.post('/login', authController.login);
 router.post('/login-mfa', authController.loginMfa);
+router.post('/refresh-token', authController.refreshToken);
 
 // Google OAuth
 router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
@@ -12,6 +13,8 @@ router.get('/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: '/login' }),
   authController.googleCallback
 );
+
+router.post('/verify-mfa-stepup', authController.protect, authController.verifyMfaStepup);
 
 // Protected routes (require login first)
 router.get('/mfa-setup', authController.protect, authController.setupMfa);

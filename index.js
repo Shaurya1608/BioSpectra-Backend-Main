@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -20,6 +21,7 @@ app.use(compression());
 
 // 3. Security Headers
 app.use(helmet());
+app.use(cookieParser());
 
 // 4. Trust proxy
 app.set('trust proxy', 1);

@@ -1,15 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const editorialController = require('../controllers/editorialController');
-const { protect } = require('../controllers/authController');
+const { protect, requireElevatedSession } = require('../controllers/authController');
 
 // Public
 router.get('/', editorialController.getAllMembers);
 
-// Protected (admin only)
-router.post('/', protect, editorialController.createMember);
-router.put('/:id', protect, editorialController.updateMember);
-router.delete('/:id', protect, editorialController.deleteMember);
-router.post('/bulk', protect, editorialController.bulkCreate);
+// Protected (admin only + MFA Elevation)
+router.post('/', protect, requireElevatedSession, editorialController.createMember);
+router.put('/:id', protect, requireElevatedSession, editorialController.updateMember);
+router.delete('/:id', protect, requireElevatedSession, editorialController.deleteMember);
+router.post('/bulk', protect, requireElevatedSession, editorialController.bulkCreate);
 
 module.exports = router;

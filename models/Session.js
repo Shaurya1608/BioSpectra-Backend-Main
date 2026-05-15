@@ -20,6 +20,9 @@ const sessionSchema = new mongoose.Schema({
     lastActive: {
         type: Date,
         default: Date.now
+    },
+    mfaVerifiedAt: {
+        type: Date
     }
 }, { timestamps: true });
 
