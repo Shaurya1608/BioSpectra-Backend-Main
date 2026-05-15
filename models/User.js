@@ -7,11 +7,27 @@ const userSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+    email: {
+        type: String,
+        required: [true, 'Please provide an email'],
+        unique: true,
+        lowercase: true
+    },
     password: {
         type: String,
-        required: [true, 'Please provide a password'],
+        required: false, // Optional for Google users
         minlength: 8,
         select: false
+    },
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    role: {
+        type: String,
+        enum: ['admin', 'editor'],
+        default: 'admin'
     },
     mfaSecret: {
         type: String,

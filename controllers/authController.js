@@ -277,3 +277,36 @@ exports.logout = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+exports.googleCallback = async (req, res) => {
+    try {
+        const user = req.user;
+        const token = signToken(user._id);
+
+        // Track Session
+        const parser = new UAParser(req.headers['user-agent']);
+        const ua = parser.getResult();
+        
+        await Session.create({
+            userId: user._id,
+            token,
+            ipAddress: req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+            userAgent: req.headers['user-agent'],
+            device: {
+                browser: `${ua.browser.name || 'Unknown'} ${ua.browser.version || ''}`,
+                os: `${ua.os.name || 'Unknown'} ${ua.os.version || ''}`,
+                device: ua.device.model || 'Desktop'
+            }
+        });
+
+        // Redirect back to admin frontend with token and user data
+        // Using ADMIN_URL from env, stripping trailing slash if present
+        const adminUrl = (process.env.ADMIN_URL || 'http://localhost:5173').replace(/\/$/, '');
+        const userData = encodeURIComponent(JSON.stringify({ id: user._id, username: user.username }));
+        
+        res.redirect(`${adminUrl}?token=${token}&user=${userData}`);
+    } catch (error) {
+        console.error('Google Callback Error:', error);
+        res.redirect(`${process.env.ADMIN_URL || 'http://localhost:5173'}/login?error=auth_failed`);
+    }
+};
