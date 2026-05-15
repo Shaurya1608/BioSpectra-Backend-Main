@@ -24,10 +24,12 @@ const createSendToken = async (user, statusCode, req, res) => {
     const cookieOptions = {
         httpOnly: true,
         secure: req.secure || req.headers['x-forwarded-for'] === 'https',
-        sameSite: 'Lax'
+        sameSite: 'None' // Required for cross-domain (Vercel to Render)
     };
 
-    if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+    if (process.env.NODE_ENV === 'production' || req.headers['x-forwarded-for'] === 'https') {
+        cookieOptions.secure = true;
+    }
 
     // Set Access Token Cookie (15 mins)
     res.cookie('jwt', accessToken, {
@@ -288,12 +290,16 @@ exports.logout = async (req, res) => {
 
         res.cookie('jwt', 'loggedout', {
             expires: new Date(Date.now() + 10 * 1000),
-            httpOnly: true
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None'
         });
 
         res.cookie('refreshToken', 'loggedout', {
             expires: new Date(Date.now() + 10 * 1000),
-            httpOnly: true
+            httpOnly: true,
+            secure: true,
+            sameSite: 'None'
         });
 
         res.status(200).json({
@@ -333,7 +339,7 @@ exports.refreshToken = async (req, res) => {
         res.cookie('jwt', accessToken, {
             httpOnly: true,
             secure: req.secure || req.headers['x-forwarded-for'] === 'https',
-            sameSite: 'Lax',
+            sameSite: 'None',
             expires: new Date(Date.now() + 15 * 60 * 1000)
         });
 
