@@ -27,20 +27,13 @@ passport.use(new GoogleStrategy({
         return done(null, user);
       }
 
-      // If not, create a new user in our db
-      // Note: By default, we might want to restrict this to specific emails 
-      // or set a default role. For an Admin panel, we should be careful.
-      
-      // For now, let's allow it but you might want to restrict to ADMIN_EMAIL
-      if (profile.emails[0].value !== process.env.ADMIN_EMAIL) {
-        return done(null, false, { message: 'Unauthorized email' });
-      }
-
+      // If user doesn't exist, create a new one with 'pending' or 'editor' role
+      // They won't have admin access by default unless promoted in the DB
       user = await User.create({
         googleId: profile.id,
         username: profile.displayName.replace(/\s+/g, '').toLowerCase() + Math.floor(Math.random() * 1000),
         email: profile.emails[0].value,
-        role: 'admin',
+        role: 'editor', // Default role is restricted
         isMfaEnabled: false
       });
 

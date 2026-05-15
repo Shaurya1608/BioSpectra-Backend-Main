@@ -281,6 +281,13 @@ exports.logout = async (req, res) => {
 exports.googleCallback = async (req, res) => {
     try {
         const user = req.user;
+
+        // Strictly check for Admin role
+        if (user.role !== 'admin') {
+            console.warn(`Unauthorized login attempt by ${user.email}`);
+            return res.redirect(`${process.env.ADMIN_URL || 'http://localhost:5173'}/login?error=unauthorized`);
+        }
+
         const token = signToken(user._id);
 
         // Track Session
