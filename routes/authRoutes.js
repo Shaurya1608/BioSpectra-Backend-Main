@@ -9,4 +9,9 @@ router.post('/login-mfa', authController.loginMfa);
 router.get('/mfa-setup', authController.protect, authController.setupMfa);
 router.post('/mfa-verify', authController.protect, authController.verifyMfaSetup);
 
+// Session Management (Audit Log)
+router.get('/sessions', authController.protect, authController.getSessions);
+router.delete('/sessions/:sessionId', authController.protect, authController.terminateSession);
+router.post('/logout', authController.protect, authController.logout);
+
 module.exports = router;

@@ -4,8 +4,8 @@ const AboutSchema = new mongoose.Schema({
     title: { type: String, required: true },
     content: { type: String },
     sectionType: { 
-        type: String, 
-        enum: ['hero', 'founder', 'history', 'mission', 'recognition', 'publication'],
+        type: String,
+        enum: ['hero', 'founder', 'history', 'mission', 'recognition', 'publication', 'metrics'],
         required: true 
     },
     images: [{ type: String }],

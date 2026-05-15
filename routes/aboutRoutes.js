@@ -1,11 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const aboutController = require('../controllers/aboutController');
+const { protect } = require('../controllers/authController');
 
+// Public
 router.get('/', aboutController.getAllSections);
-router.post('/', aboutController.createSection);
-router.put('/:id', aboutController.updateSection);
-router.delete('/:id', aboutController.deleteSection);
-router.post('/bulk', aboutController.bulkCreate);
+
+// Protected (admin only)
+router.post('/', protect, aboutController.createSection);
+router.put('/:id', protect, aboutController.updateSection);
+router.delete('/:id', protect, aboutController.deleteSection);
+router.post('/bulk', protect, aboutController.bulkCreate);
 
 module.exports = router;

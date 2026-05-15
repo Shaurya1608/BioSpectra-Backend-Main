@@ -4,19 +4,17 @@ const User = require('./models/User');
 
 dotenv.config();
 
-const seedAdmin = async () => {
+const cleanSeed = async () => {
     try {
         await mongoose.connect(process.env.MONGODB_URI);
         console.log('Connected to MongoDB');
 
-        const username = 'biospec@123';
-        const password = 'biospec098@123'; // New secure credentials
+        // DELETE ALL USERS FIRST to avoid any conflicts
+        await User.deleteMany({});
+        console.log('Cleared all existing users.');
 
-        const existingUser = await User.findOne({ username });
-        if (existingUser) {
-            console.log('Admin user already exists');
-            process.exit(0);
-        }
+        const username = 'biospec@123';
+        const password = 'biospec098@123';
 
         const admin = new User({
             username,
@@ -24,10 +22,11 @@ const seedAdmin = async () => {
         });
 
         await admin.save();
-        console.log('Admin user created successfully!');
+        console.log('---------------------------');
+        console.log('ADMIN CREATED SUCCESSFULLY');
         console.log(`Username: ${username}`);
         console.log(`Password: ${password}`);
-        console.log('IMPORTANT: Keep these credentials safe!');
+        console.log('---------------------------');
         
         process.exit(0);
     } catch (error) {
@@ -36,4 +35,4 @@ const seedAdmin = async () => {
     }
 };
 
-seedAdmin();
+cleanSeed();

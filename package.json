@@ -31,7 +31,8 @@
     "pdf-parse": "^1.1.1",
     "qrcode": "^1.5.4",
     "resend": "^6.12.2",
-    "speakeasy": "^2.0.0"
+    "speakeasy": "^2.0.0",
+    "ua-parser-js": "^2.0.9"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

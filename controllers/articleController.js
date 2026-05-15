@@ -171,12 +171,28 @@ exports.updateArticle = async (req, res) => {
 exports.deleteCategory = async (req, res) => {
     try {
         const { id } = req.params;
-        // Delete all articles in this category first
+        
+        // 1. Find all articles in this category to get their Cloudinary IDs
+        const articles = await Article.find({ category: id });
+        
+        // 2. Delete all files from Cloudinary
+        const deletePromises = articles.map(article => {
+            if (article.cloudinaryId) {
+                return cloudinary.uploader.destroy(article.cloudinaryId);
+            }
+            return Promise.resolve();
+        });
+        await Promise.all(deletePromises);
+
+        // 3. Delete all articles in this category from DB
         await Article.deleteMany({ category: id });
-        // Delete the category
+
+        // 4. Delete the category itself
         await Category.findByIdAndDelete(id);
-        res.json({ message: 'Section and all its articles deleted successfully' });
+        
+        res.json({ message: 'Section and all its articles (including files) deleted successfully' });
     } catch (error) {
+        console.error('Delete Category Error:', error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -193,5 +209,42 @@ exports.createCategory = async (req, res) => {
     } catch (error) {
         console.error('Create Category Error:', error);
         res.status(400).json({ message: error.message });
+    }
+};
+
+exports.deleteYear = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // 1. Find all issues for this year
+        const issues = await Issue.find({ year: id });
+        const issueIds = issues.map(i => i._id);
+
+        // 2. Find all categories for these issues
+        const categories = await Category.find({ issue: { $in: issueIds } });
+        const categoryIds = categories.map(c => c._id);
+
+        // 3. Find all articles for these categories
+        const articles = await Article.find({ category: { $in: categoryIds } });
+        
+        // 4. Delete all article files from Cloudinary
+        const deletePromises = articles.map(article => {
+            if (article.cloudinaryId) {
+                return cloudinary.uploader.destroy(article.cloudinaryId);
+            }
+            return Promise.resolve();
+        });
+        await Promise.all(deletePromises);
+
+        // 5. Recursive DB Deletion
+        await Article.deleteMany({ category: { $in: categoryIds } });
+        await Category.deleteMany({ issue: { $in: issueIds } });
+        await Issue.deleteMany({ year: id });
+        await Year.findByIdAndDelete(id);
+
+        res.json({ message: 'Volume and all associated content deleted successfully' });
+    } catch (error) {
+        console.error('Delete Year Error:', error);
+        res.status(500).json({ message: error.message });
     }
 };

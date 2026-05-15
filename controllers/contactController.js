@@ -2,6 +2,17 @@ const { Resend } = require('resend');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Sanitize user input to prevent XSS in emails
+const escapeHtml = (str) => {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+};
+
 exports.submitContactForm = async (req, res) => {
     try {
         const { fullName, email, subject, message, inquiryType } = req.body;
@@ -22,14 +33,14 @@ exports.submitContactForm = async (req, res) => {
             });
         }
 
-        // 2. Construct Email HTML
+        // 2. Construct Email HTML (sanitized)
         const htmlContent = `
-            <h2>New Inquiry: ${inquiryType}</h2>
-            <p><strong>From:</strong> ${fullName} (${email})</p>
-            <p><strong>Subject:</strong> ${subject}</p>
+            <h2>New Inquiry: ${escapeHtml(inquiryType)}</h2>
+            <p><strong>From:</strong> ${escapeHtml(fullName)} (${escapeHtml(email)})</p>
+            <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
             <hr />
             <p><strong>Message:</strong></p>
-            <p style="white-space: pre-wrap;">${message}</p>
+            <p style="white-space: pre-wrap;">${escapeHtml(message)}</p>
         `;
 
         // Prepare attachments array

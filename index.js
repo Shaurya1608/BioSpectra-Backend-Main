@@ -27,12 +27,24 @@ app.set('trust proxy', 1);
 // 5. Rate Limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 1000, // Increased for development
+    max: 1000,
     message: 'Too many requests from this IP, please try again after 15 minutes',
     standardHeaders: true,
     legacyHeaders: false,
 });
 app.use('/api/', limiter);
+
+// Strict rate limiter for auth routes (brute-force protection)
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20, // Increased slightly for better UX
+    message: 'Too many login attempts. Please try again after 15 minutes.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+// Apply only to login endpoints in routes, but for now let's use it on specific paths here
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/login-mfa', authLimiter);
 
 // 6. Data Sanitization
 app.use((req, res, next) => {
@@ -108,6 +120,32 @@ app.get('/api/health', (req, res) => {
         status: 'UP', 
         database: dbState,
         timestamp: new Date()
+    });
+});
+
+// 404 Handler
+app.use((req, res, next) => {
+    res.status(404).json({
+        status: 'fail',
+        message: `Can't find ${req.originalUrl} on this server!`
+    });
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    err.statusCode = err.statusCode || 500;
+    err.status = err.status || 'error';
+
+    // Log error for developers
+    if (process.env.NODE_ENV === 'development') {
+        console.error('ERROR 💥', err);
+    }
+
+    res.status(err.statusCode).json({
+        status: err.status,
+        message: err.message || 'Internal Server Error',
+        // Only include stack trace in development
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
 });
 

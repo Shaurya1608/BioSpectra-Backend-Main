@@ -8,7 +8,8 @@ exports.globalSearch = async (req, res) => {
             return res.status(400).json({ message: 'Query parameter q is required' });
         }
 
-        const queryRegex = new RegExp(q, 'i');
+        const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const queryRegex = new RegExp(escaped, 'i');
 
         // Search Articles
         const articles = await Article.find({

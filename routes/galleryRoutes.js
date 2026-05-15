@@ -4,6 +4,7 @@ const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const galleryController = require('../controllers/galleryController');
+const { protect } = require('../controllers/authController');
 
 // Cloudinary storage with auto-compression for gallery images
 // Industry standard: WebP format, quality auto, max 1200px width
@@ -24,9 +25,12 @@ const galleryUpload = multer({
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB max
 });
 
+// Public
 router.get('/', galleryController.getGalleryImages);
-router.post('/', galleryUpload.single('image'), galleryController.uploadGalleryImage);
-router.put('/:id', galleryController.updateGalleryImage);
-router.delete('/:id', galleryController.deleteGalleryImage);
+
+// Protected (admin only)
+router.post('/', protect, galleryUpload.single('image'), galleryController.uploadGalleryImage);
+router.put('/:id', protect, galleryController.updateGalleryImage);
+router.delete('/:id', protect, galleryController.deleteGalleryImage);
 
 module.exports = router;

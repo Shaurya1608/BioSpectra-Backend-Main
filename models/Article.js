@@ -28,6 +28,7 @@ const articleSchema = new mongoose.Schema({
     keywords: [String],
     pages: String,
     doi: String,
+    affiliation: String,
     issue: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Issue'
